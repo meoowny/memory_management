@@ -1,5 +1,5 @@
 use super::pages;
-use std::collections;
+use std::collections::VecDeque;
 
 #[derive(Debug)]
 pub enum Fault {
@@ -18,60 +18,33 @@ pub trait Scheduler {
 
 pub struct FIFOScheduler {
     capacity: usize,
-    history: collections::LinkedList<usize>,
+    oldest_block_id: usize,
 }
 
 impl FIFOScheduler {
     pub fn new(capacity: usize) -> Self {
         Self {
             capacity,
-            history: collections::LinkedList::from([]),
+            oldest_block_id: 0,
         }
     }
 }
 
 impl Scheduler for FIFOScheduler {
     fn check(&mut self, new_page_id: usize, blocks: &Vec<Option<pages::Page>>, page_table: &Vec<pages::Page>) -> Result<usize, Fault> {
-        // 查看是否缺页
-        // TODO: 用查表代替遍历
-        let mut it = blocks.iter();
-        let result: Result<usize, Fault> = loop {
-            match it.next() {
-                Some(Some(page)) if page.page_id == new_page_id => break Ok(page.page_id.to_owned()),
-                None => break Err(Fault::PageFault(0)),
-                Some(_) => continue,
-            }
-        };
-
-        // 内存块尚有空闲且缺页时
-        if result.is_err() && blocks.iter().find(|&&x| x.is_none()).is_some() {
-            self.history.push_front(new_page_id);
-            for i in 0..self.capacity {
-                if blocks[i].is_none() {
-                    return Ok(i);
-                }
-            }
-            panic!("Unexpected branch!");
-        }
-
-        // 内存无空闲，不缺页则不做任何事，缺页则调出页并调入请求页
-        match result {
-            Ok(page_id) => {
-                let block_id = page_table[page_id].block_id.unwrap();
-                Ok(block_id)
+        // 不缺页则不做任何事，缺页则调出页并调入请求页
+        match page_table[new_page_id].block_id {
+            Some(block_id) => Ok(block_id),
+            None => {
+                let oldest_page_id = self.oldest_block_id;
+                self.oldest_block_id = (self.oldest_block_id + 1) % self.capacity;
+                Err(Fault::PageFault(oldest_page_id))
             },
-            Err(Fault::PageFault(_)) => {
-                let oldest_page = self.history.back().unwrap().to_owned();
-                self.history.pop_back();
-                self.history.push_front(new_page_id);
-                Err(Fault::PageFault(page_table[oldest_page].block_id.unwrap()))
-            },
-            Err(_) => panic!("Unexpected branch"),
         }
     }
 
     fn reset(&mut self) {
-        self.history.clear();
+        self.oldest_block_id = 0;
     }
 }
 
@@ -81,14 +54,14 @@ impl Scheduler for FIFOScheduler {
 
 pub struct LRUScheduler {
     capacity: usize,
-    current_pages: Vec<usize>,
+    current_pages: VecDeque<usize>,
 }
 
 impl LRUScheduler {
     pub fn new(capacity: usize) -> Self {
         Self {
             capacity,
-            current_pages: vec![],
+            current_pages: VecDeque::new(),
         }
     }
 }
@@ -99,49 +72,61 @@ impl Scheduler for LRUScheduler {
     }
 
     fn check(&mut self, new_page_id: usize, blocks: &Vec<Option<pages::Page>>, page_table: &Vec<pages::Page>) -> Result<usize, Fault> {
-        // 查看是否缺页
-        // let mut it = self.current_pages.iter();
-        // let result: Result<usize, Fault> = loop {
-        //     match it.next() {
-        //         Some(page_id) if *page_id == new_page_id => break Ok(page_id.to_owned()),
-        //         None => break Err(Fault::PageFault(0)),
-        //         Some(_) => continue,
-        //     }
-        // };
-        let result = match page_table[new_page_id].block_id {
-            Some(_) => Ok(new_page_id),
-            None => Err(Fault::PageFault(0)),
-        };
-        println!("??{result:?}: {new_page_id}");
-
-        // 内存块尚有空闲且缺页时
-        if result.is_err() && self.current_pages.len() < self.capacity {
-            println!("Ok");
-            self.current_pages.push(new_page_id);
-            for i in 0..self.capacity {
-                if blocks[i].is_none() {
-                    return Ok(i);
-                }
-            }
-            panic!("Unexpected branch!");
-        }
-
-        // 内存无空闲，不缺页则更新栈，缺页则调出页并调入请求页
-        match result {
-            Ok(page_id) => {
-                let block_id = page_table[page_id].block_id.unwrap();
-                self.current_pages.retain(|page| *page != page_id);
-                self.current_pages.push(page_id);
+        match page_table[new_page_id].block_id {
+            Some(block_id) => {
+                self.current_pages.retain(|page| *page != new_page_id);
+                self.current_pages.push_back(new_page_id);
                 Ok(block_id)
             },
-            Err(Fault::PageFault(_)) => {
-                println!("Yes:");
-                let oldest_page = self.current_pages.last().unwrap().to_owned();
-                self.current_pages.pop();
-                self.current_pages.push(new_page_id);
+            None if self.current_pages.len() < self.capacity => {
+                self.current_pages.push_back(new_page_id);
+                for i in 0..self.capacity {
+                    if blocks[i].is_none() {
+                        return Err(Fault::PageFault(i));
+                    }
+                }
+                panic!("Unexpected branch in LRU check: {new_page_id} -- {}/{}", self.current_pages.len(), self.capacity);
+            },
+            None => {
+                let oldest_page = self.current_pages.front().unwrap().to_owned();
+                self.current_pages.push_back(new_page_id);
+                self.current_pages.pop_front();
                 Err(Fault::PageFault(page_table[oldest_page].block_id.unwrap()))
             },
-            Err(_) => panic!("Unexpected branch"),
         }
     }
+    // 查看是否缺页
+//    let result = match page_table[new_page_id].block_id {
+//        Some(_) => Ok(new_page_id),
+//        None => Err(Fault::PageFault(0)),
+//    };
+//
+//    // 内存块尚有空闲且缺页时
+//    if result.is_err() && self.current_pages.len() < self.capacity {
+//        self.current_pages.push_back(new_page_id);
+//        for i in 0..self.capacity {
+//            if blocks[i].is_none() {
+//                return Err(Fault::PageFault(i));
+//            }
+//        }
+//        panic!("Unexpected branch!");
+//    }
+//
+//    // 内存无空闲，不缺页则更新栈，缺页则调出页并调入请求页
+//    match result {
+//        Ok(page_id) => {
+//            let block_id = page_table[page_id].block_id.unwrap();
+//            self.current_pages.retain(|page| *page != page_id);
+//            self.current_pages.push_back(page_id);
+//            Ok(block_id)
+//        },
+//        Err(Fault::PageFault(_)) => {
+//            let oldest_page = self.current_pages.back().unwrap().to_owned();
+//            self.current_pages.pop_front();
+//            self.current_pages.push_back(new_page_id);
+//            Err(Fault::PageFault(page_table[oldest_page].block_id.unwrap()))
+//        },
+//        Err(_) => panic!("Unexpected branch"),
+//    }
+//}
 }

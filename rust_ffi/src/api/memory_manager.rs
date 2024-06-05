@@ -8,8 +8,7 @@ pub enum Choice {
     LRU,
 }
 
-pub struct MemoryManager
-{
+pub struct MemoryManager {
     capacity: usize,
     scheduler: Box<dyn scheduler::Scheduler>,
     blocks: Vec<Option<pages::Page>>,
@@ -19,8 +18,7 @@ pub struct MemoryManager
     instrument_counter: usize,
 }
 
-impl MemoryManager
-{
+impl MemoryManager {
     pub fn new<T, F>(sc: F, capacity: usize, blocks: &Vec<Option<pages::Page>>, page_table: Vec<pages::Page>, page_size: usize) -> MemoryManager
     where
         T: 'static + scheduler::Scheduler,
@@ -49,7 +47,9 @@ impl MemoryManager
     }
 
     pub fn step(&mut self, instrument: &usize) -> MemState {
+        // 指令计数器加一
         self.instrument_counter += 1;
+        // 计算当前指令所在页号
         let current_page = instrument / self.page_size;
         let (is_page_fault, past_page_id, block_id) =
             match self.scheduler.check(current_page, &self.blocks, &self.page_table) {
@@ -57,15 +57,23 @@ impl MemoryManager
                     (false, None, block_id)
                 },
                 Err(Fault::PageFault(block_id)) => {
-                    let past_page = self.blocks[block_id].unwrap();
-                    self.page_table[past_page.page_id].swap_out();
+                    self.fault_counter += 1;
+
+                    let prev_page = self.blocks[block_id];
+                    self.page_table[current_page].swap_in(block_id);
+                    self.blocks[block_id] = Some(self.page_table[current_page].to_owned());
+
                     (true,
-                     Some(past_page.page_id),
+                     match prev_page {
+                         Some(page) => {
+                             self.page_table[page.page_id].swap_out();
+                             Some(page.page_id)
+                         },
+                         None => None,
+                     },
                      block_id)
                 }
             };
-        self.page_table[current_page].swap_in(block_id);
-        self.blocks[block_id] = Some(self.page_table[current_page].to_owned());
 
         let info = if is_page_fault {
             format!("发生缺页，置换内存块 {block_id} 中的 {past_page_id:?} 页为 {current_page} 页")
