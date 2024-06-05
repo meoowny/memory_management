@@ -33,6 +33,7 @@ impl FIFOScheduler {
 impl Scheduler for FIFOScheduler {
     fn check(&mut self, new_page_id: usize, blocks: &Vec<Option<pages::Page>>, page_table: &Vec<pages::Page>) -> Result<usize, Fault> {
         // 查看是否缺页
+        // TODO: 用查表代替遍历
         let mut it = blocks.iter();
         let result: Result<usize, Fault> = loop {
             match it.next() {
@@ -59,7 +60,7 @@ impl Scheduler for FIFOScheduler {
                 let block_id = page_table[page_id].block_id.unwrap();
                 Ok(block_id)
             },
-            Err(Fault::PageFault(0)) => {
+            Err(Fault::PageFault(_)) => {
                 let oldest_page = self.history.back().unwrap().to_owned();
                 self.history.pop_back();
                 self.history.push_front(new_page_id);
@@ -99,17 +100,23 @@ impl Scheduler for LRUScheduler {
 
     fn check(&mut self, new_page_id: usize, blocks: &Vec<Option<pages::Page>>, page_table: &Vec<pages::Page>) -> Result<usize, Fault> {
         // 查看是否缺页
-        let mut it = self.current_pages.iter();
-        let result: Result<usize, Fault> = loop {
-            match it.next() {
-                Some(page_id) if *page_id == new_page_id => break Ok(page_id.to_owned()),
-                None => break Err(Fault::PageFault(0)),
-                Some(_) => continue,
-            }
+        // let mut it = self.current_pages.iter();
+        // let result: Result<usize, Fault> = loop {
+        //     match it.next() {
+        //         Some(page_id) if *page_id == new_page_id => break Ok(page_id.to_owned()),
+        //         None => break Err(Fault::PageFault(0)),
+        //         Some(_) => continue,
+        //     }
+        // };
+        let result = match page_table[new_page_id].block_id {
+            Some(_) => Ok(new_page_id),
+            None => Err(Fault::PageFault(0)),
         };
+        println!("??{result:?}: {new_page_id}");
 
         // 内存块尚有空闲且缺页时
         if result.is_err() && self.current_pages.len() < self.capacity {
+            println!("Ok");
             self.current_pages.push(new_page_id);
             for i in 0..self.capacity {
                 if blocks[i].is_none() {
@@ -127,7 +134,8 @@ impl Scheduler for LRUScheduler {
                 self.current_pages.push(page_id);
                 Ok(block_id)
             },
-            Err(Fault::PageFault(0)) => {
+            Err(Fault::PageFault(_)) => {
+                println!("Yes:");
                 let oldest_page = self.current_pages.last().unwrap().to_owned();
                 self.current_pages.pop();
                 self.current_pages.push(new_page_id);

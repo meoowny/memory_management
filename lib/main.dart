@@ -46,43 +46,35 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget displayRecords() {
+    const title = ['Sequential', 'Instruments', 'Frame1', 'Frame2', 'Frame3', 'Frame4', 'Info'];
+    List<DataColumn> headers = [];
+    for (var t in title) {
+      headers.add(DataColumn(
+          label: Expanded(
+            child: Text(
+              t,
+              style: const TextStyle(fontStyle: FontStyle.italic),
+            ),
+          ),
+      ));
+    }
     List<DataRow> tbl = [];
-    for (var i in _record.records) {
+    for (var record in _record.records) {
       tbl.add(DataRow(
         cells: [
-          DataCell(Text(i.frame[0].toString())),
-          DataCell(Text(i.frame[1].toString())),
-          DataCell(Text(i.frame[2].toString())),
+          DataCell(Text(record.sequential.toString())),
+          DataCell(Text(record.instrument.toString())),
+          DataCell(Text(record.frame[0].toString())),
+          DataCell(Text(record.frame[1].toString())),
+          DataCell(Text(record.frame[2].toString())),
+          DataCell(Text(record.frame[3].toString())),
+          DataCell(Text(record.info)),
         ],
       ));
     }
+
     return DataTable(
-      columns: const <DataColumn>[
-        DataColumn(
-          label: Expanded(
-            child: Text(
-              'Name',
-              style: TextStyle(fontStyle: FontStyle.italic),
-            ),
-          ),
-        ),
-        DataColumn(
-          label: Expanded(
-            child: Text(
-              'Age',
-              style: TextStyle(fontStyle: FontStyle.italic),
-            ),
-          ),
-        ),
-        DataColumn(
-          label: Expanded(
-            child: Text(
-              'Role',
-              style: TextStyle(fontStyle: FontStyle.italic),
-            ),
-          ),
-        ),
-      ],
+      columns: headers,
       rows: tbl,
     );
   }
@@ -95,8 +87,8 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: ListView(
+          // mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             const Text(
               'You have pushed the button this many times:',
