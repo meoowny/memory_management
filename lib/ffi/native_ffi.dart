@@ -29,7 +29,7 @@ class NativeFFI {
 class NativeFun {
   static final _ffi = RustFfiImpl(NativeFFI.dyLib);
 
-  static Future<ExecRecord> generateReplacementRecord(int memCapacity, Choice choice) async {
-    return await _ffi.generateReplacementRecord(memCapacity: memCapacity, totalInstrument: 320, choice: Choice.LRU, pageSize: 10);
+  static Future<ExecRecord> generateReplacementRecord(AlgoChoice algoChoice, GenChoice genChoice) async {
+    return await _ffi.generateReplacementRecord(memCapacity: 4, totalInstrument: 320, pageSize: 10, algoChoice:algoChoice, genChoice: genChoice);
   }
 }

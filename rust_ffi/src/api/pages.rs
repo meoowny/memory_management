@@ -1,25 +1,41 @@
 use rand::Rng;
 use rand::distributions::{Distribution, Uniform};
 
-pub fn gen_access_order(total_instrument: usize) -> Vec<usize> {
+pub fn gen_random_order(total_instrument: usize) -> Vec<usize> {
     let mut rng = rand::thread_rng();
     let die = Uniform::from(0.0..1.0);
 
-    let mut results: Vec<usize> = Vec::new();
+    let mut results = Vec::new();
 
     for _ in 0..total_instrument {
-        match die.sample(&mut rng) {
+        results.push(match die.sample(&mut rng) {
             x if x < 0.5 => {
-                results.push(
-                    match results.last() {
-                        Some(x) if x + 1 < total_instrument => x + 1,
-                        _ => 0
-                    })
+                match results.last() {
+                    Some(x) if x + 1 < total_instrument => x + 1,
+                    _ => rng.gen_range(0..total_instrument),
+                }
             },
-            x if x < 0.75 => results.push(rng.gen_range(0..(results.last().unwrap_or(&(total_instrument - 1)) + 1))),
-            _ => results.push(rng.gen_range(results.last().unwrap_or(&0).clone()..total_instrument)),
-        }
+            x if x < 0.75 => rng.gen_range(0..(results.last().unwrap_or(&(total_instrument - 1)) + 1)),
+            _ => rng.gen_range(results.last().unwrap_or(&0).clone()..total_instrument),
+        });
     }
+    results
+}
+
+pub fn gen_sequential_order(total_instrument: usize) -> Vec<usize> {
+    let mut rng = rand::thread_rng();
+
+    let mut results = Vec::<usize>::new();
+
+    for i in 0..total_instrument {
+        results.push(match i % 4 {
+            1 | 3 => (results.last().unwrap_or(&0) + 1) % total_instrument,
+            0 => rng.gen_range(0..(results.last().unwrap_or(&(total_instrument - 1)) + 1)),
+            2 => rng.gen_range(results.last().unwrap_or(&0).clone()..total_instrument),
+            _ => panic!("Unexpected branch!"),
+        });
+    }
+
     results
 }
 

@@ -6,10 +6,18 @@ pub extern "C" fn wire_generate_replacement_record(
     port_: i64,
     mem_capacity: usize,
     total_instrument: usize,
-    choice: i32,
     page_size: usize,
+    algo_choice: i32,
+    gen_choice: i32,
 ) {
-    wire_generate_replacement_record_impl(port_, mem_capacity, total_instrument, choice, page_size)
+    wire_generate_replacement_record_impl(
+        port_,
+        mem_capacity,
+        total_instrument,
+        page_size,
+        algo_choice,
+        gen_choice,
+    )
 }
 
 // Section: allocate functions

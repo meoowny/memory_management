@@ -26,8 +26,9 @@ fn wire_generate_replacement_record_impl(
     port_: MessagePort,
     mem_capacity: impl Wire2Api<usize> + UnwindSafe,
     total_instrument: impl Wire2Api<usize> + UnwindSafe,
-    choice: impl Wire2Api<Choice> + UnwindSafe,
     page_size: impl Wire2Api<usize> + UnwindSafe,
+    algo_choice: impl Wire2Api<AlgoChoice> + UnwindSafe,
+    gen_choice: impl Wire2Api<GenChoice> + UnwindSafe,
 ) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap::<_, _, _, ExecRecord, _>(
         WrapInfo {
@@ -38,14 +39,16 @@ fn wire_generate_replacement_record_impl(
         move || {
             let api_mem_capacity = mem_capacity.wire2api();
             let api_total_instrument = total_instrument.wire2api();
-            let api_choice = choice.wire2api();
             let api_page_size = page_size.wire2api();
+            let api_algo_choice = algo_choice.wire2api();
+            let api_gen_choice = gen_choice.wire2api();
             move |task_callback| {
                 Result::<_, ()>::Ok(generate_replacement_record(
                     api_mem_capacity,
                     api_total_instrument,
-                    api_choice,
                     api_page_size,
+                    api_algo_choice,
+                    api_gen_choice,
                 ))
             }
         },
@@ -73,12 +76,21 @@ where
         (!self.is_null()).then(|| self.wire2api())
     }
 }
-impl Wire2Api<Choice> for i32 {
-    fn wire2api(self) -> Choice {
+impl Wire2Api<AlgoChoice> for i32 {
+    fn wire2api(self) -> AlgoChoice {
         match self {
-            0 => Choice::FIFO,
-            1 => Choice::LRU,
-            _ => unreachable!("Invalid variant for Choice: {}", self),
+            0 => AlgoChoice::FIFO,
+            1 => AlgoChoice::LRU,
+            _ => unreachable!("Invalid variant for AlgoChoice: {}", self),
+        }
+    }
+}
+impl Wire2Api<GenChoice> for i32 {
+    fn wire2api(self) -> GenChoice {
+        match self {
+            0 => GenChoice::Random,
+            1 => GenChoice::Sequential,
+            _ => unreachable!("Invalid variant for GenChoice: {}", self),
         }
     }
 }

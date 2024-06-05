@@ -14,14 +14,15 @@ abstract class RustFfi {
   Future<ExecRecord> generateReplacementRecord(
       {required int memCapacity,
       required int totalInstrument,
-      required Choice choice,
       required int pageSize,
+      required AlgoChoice algoChoice,
+      required GenChoice genChoice,
       dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kGenerateReplacementRecordConstMeta;
 }
 
-enum Choice {
+enum AlgoChoice {
   FIFO,
   LRU,
 }
@@ -36,6 +37,11 @@ class ExecRecord {
     required this.totalInstrument,
     required this.totalFaults,
   });
+}
+
+enum GenChoice {
+  Random,
+  Sequential,
 }
 
 class MemState {
@@ -64,20 +70,28 @@ class RustFfiImpl implements RustFfi {
   Future<ExecRecord> generateReplacementRecord(
       {required int memCapacity,
       required int totalInstrument,
-      required Choice choice,
       required int pageSize,
+      required AlgoChoice algoChoice,
+      required GenChoice genChoice,
       dynamic hint}) {
     var arg0 = api2wire_usize(memCapacity);
     var arg1 = api2wire_usize(totalInstrument);
-    var arg2 = api2wire_choice(choice);
-    var arg3 = api2wire_usize(pageSize);
+    var arg2 = api2wire_usize(pageSize);
+    var arg3 = api2wire_algo_choice(algoChoice);
+    var arg4 = api2wire_gen_choice(genChoice);
     return _platform.executeNormal(FlutterRustBridgeTask(
-      callFfi: (port_) => _platform.inner
-          .wire_generate_replacement_record(port_, arg0, arg1, arg2, arg3),
+      callFfi: (port_) => _platform.inner.wire_generate_replacement_record(
+          port_, arg0, arg1, arg2, arg3, arg4),
       parseSuccessData: _wire2api_exec_record,
       parseErrorData: null,
       constMeta: kGenerateReplacementRecordConstMeta,
-      argValues: [memCapacity, totalInstrument, choice, pageSize],
+      argValues: [
+        memCapacity,
+        totalInstrument,
+        pageSize,
+        algoChoice,
+        genChoice
+      ],
       hint: hint,
     ));
   }
@@ -85,7 +99,13 @@ class RustFfiImpl implements RustFfi {
   FlutterRustBridgeTaskConstMeta get kGenerateReplacementRecordConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
         debugName: "generate_replacement_record",
-        argNames: ["memCapacity", "totalInstrument", "choice", "pageSize"],
+        argNames: [
+          "memCapacity",
+          "totalInstrument",
+          "pageSize",
+          "algoChoice",
+          "genChoice"
+        ],
       );
 
   void dispose() {
@@ -148,7 +168,12 @@ class RustFfiImpl implements RustFfi {
 // Section: api2wire
 
 @protected
-int api2wire_choice(Choice raw) {
+int api2wire_algo_choice(AlgoChoice raw) {
+  return api2wire_i32(raw.index);
+}
+
+@protected
+int api2wire_gen_choice(GenChoice raw) {
   return api2wire_i32(raw.index);
 }
 
@@ -273,25 +298,27 @@ class RustFfiWire implements FlutterRustBridgeWireBase {
     int port_,
     int mem_capacity,
     int total_instrument,
-    int choice,
     int page_size,
+    int algo_choice,
+    int gen_choice,
   ) {
     return _wire_generate_replacement_record(
       port_,
       mem_capacity,
       total_instrument,
-      choice,
       page_size,
+      algo_choice,
+      gen_choice,
     );
   }
 
   late final _wire_generate_replacement_recordPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Void Function(ffi.Int64, ffi.UintPtr, ffi.UintPtr, ffi.Int32,
-              ffi.UintPtr)>>('wire_generate_replacement_record');
+          ffi.Void Function(ffi.Int64, ffi.UintPtr, ffi.UintPtr, ffi.UintPtr,
+              ffi.Int32, ffi.Int32)>>('wire_generate_replacement_record');
   late final _wire_generate_replacement_record =
       _wire_generate_replacement_recordPtr
-          .asFunction<void Function(int, int, int, int, int)>();
+          .asFunction<void Function(int, int, int, int, int, int)>();
 
   void free_WireSyncReturn(
     WireSyncReturn ptr,

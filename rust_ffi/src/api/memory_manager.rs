@@ -3,11 +3,6 @@ use super::MemState;
 use super::pages;
 use super::scheduler::Fault;
 
-pub enum Choice {
-    FIFO,
-    LRU,
-}
-
 pub struct MemoryManager {
     capacity: usize,
     scheduler: Box<dyn scheduler::Scheduler>,
@@ -25,8 +20,13 @@ impl MemoryManager {
         F: Fn(usize) -> T
     {
         MemoryManager {
+            capacity,
+            scheduler: Box::new(sc(capacity)),
             blocks: blocks.to_owned(),
-            ..MemoryManager::default(sc, capacity, page_table, page_size)
+            page_table,
+            page_size,
+            instrument_counter: 0,
+            fault_counter: 0,
         }
     }
 
@@ -35,15 +35,7 @@ impl MemoryManager {
         T: 'static + scheduler::Scheduler,
         F: Fn(usize) -> T
     {
-        MemoryManager {
-            capacity,
-            scheduler: Box::new(sc(capacity)),
-            blocks: vec![None; capacity],
-            page_table,
-            page_size,
-            instrument_counter: 0,
-            fault_counter: 0,
-        }
+        Self::new(sc, capacity, &vec![None; capacity], page_table, page_size)
     }
 
     pub fn step(&mut self, instrument: &usize) -> MemState {
@@ -59,51 +51,37 @@ impl MemoryManager {
                 Err(Fault::PageFault(block_id)) => {
                     self.fault_counter += 1;
 
-                    let prev_page = self.blocks[block_id];
-                    self.page_table[current_page].swap_in(block_id);
-                    self.blocks[block_id] = Some(self.page_table[current_page].to_owned());
-
                     (true,
-                     match prev_page {
-                         Some(page) => {
-                             self.page_table[page.page_id].swap_out();
-                             Some(page.page_id)
-                         },
-                         None => None,
-                     },
+                     self.blocks[block_id].map_or(None, |page| {
+                         self.page_table[page.page_id].swap_out();
+                         Some(page.page_id)
+                     }),
                      block_id)
                 }
             };
 
         let info = if is_page_fault {
+            self.page_table[current_page].swap_in(block_id);
+            self.blocks[block_id] = Some(self.page_table[current_page].to_owned());
+
             format!("发生缺页，置换内存块 {block_id} 中的 {past_page_id:?} 页为 {current_page} 页")
         }
         else {
-            String::from("正常运行")
+            format!("指令 {instrument} 已在内存中，正常运行中")
         };
 
         MemState {
             sequential: self.instrument_counter,
             instrument: instrument.to_owned(),
-            frame:
-                self.blocks
+            frame: self.blocks
                 .iter()
                 .map(|x| match x {
                     Some(page) => Some(page.page_id),
                     None => None,
                 })
-            .collect(),
+                .collect(),
             info,
         }
-    }
-
-    // TODO: 
-    pub fn reset(&mut self) {
-        self.blocks
-            .iter_mut()
-            .for_each(|x| { *x = None; });
-        self.instrument_counter = 0;
-        self.fault_counter = 0;
     }
 
     pub fn total_fault(&self) -> usize {
