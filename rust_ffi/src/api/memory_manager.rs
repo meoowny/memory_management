@@ -64,7 +64,10 @@ impl MemoryManager {
             self.page_table[current_page].swap_in(block_id);
             self.blocks[block_id] = Some(self.page_table[current_page].to_owned());
 
-            format!("发生缺页，置换内存块 {block_id} 中的 {past_page_id:?} 页为 {current_page} 页")
+            match past_page_id {
+                Some(id) => format!("发生缺页，置换内存块 {block_id} 中的第 {id} 页为第 {current_page} 页"),
+                None => format!("发生缺页，内存块 {block_id} 调入第 {current_page} 页"),
+            }
         }
         else {
             format!("指令 {instrument} 已在内存中，正常运行中")
