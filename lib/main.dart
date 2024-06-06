@@ -54,9 +54,8 @@ class _MyHomePageState extends State<MyHomePage> {
   ExecRecord _record = const ExecRecord(records: [], totalInstrument: 320, totalFaults: 0);
 
   void _incrementCounter() async {
-    // https://api.flutter.dev/flutter/material/DataTable-class.html
     _record = await NativeFun.generateReplacementRecord(_algoChoice, _genChoice);
-    setState(() { });
+    setState(() {});
   }
 
   @override
@@ -129,8 +128,8 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ]
           ),
-          Center(
-            child: RecordDisplay(record: _record),
+          SizedBox(
+            child: RecordDisplay(records: _record.records),
           ),
         ],
       ),

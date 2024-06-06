@@ -4,10 +4,10 @@ import 'package:os_lab2/ffi/rust_ffi.dart';
 class RecordDisplay extends StatelessWidget {
   const RecordDisplay({
     super.key,
-    required this.record,
+    required this.records,
   });
 
-  final ExecRecord record;
+  final List<MemState> records;
 
   @override
   Widget build(BuildContext context) {
@@ -22,71 +22,87 @@ class RecordDisplay extends StatelessWidget {
       ),
     );
 
-    var tableContents = List<DataRow>.generate(
-      record.records.length,
-      (int index) => DataRow(
-        color: WidgetStateProperty.resolveWith(
-          (Set<WidgetState> states) {
-            if (index.isEven) {
-              return Colors.grey.withOpacity(0.2);
-            }
-            return null;
-          }
-        ),
-        cells: [
-          DataCell(
-            Row(
-              children: [
-                const Icon(Icons.access_alarm),
-                Text('No.${record.records[index].sequential}'),
-              ],
-            ),
-          ),
-          DataCell(
-            Row(
-              children: [
-                const Icon(Icons.fork_right),
-                Text('Ins.${record.records[index].instrument}'),
-              ],
-            ),
-          ),
-          DataCell(
-            Text('${record.records[index].frame[0]}'),
-          ),
-          DataCell(
-            Text('${record.records[index].frame[1]}'),
-          ),
-          DataCell(
-            Text('${record.records[index].frame[2]}'),
-          ),
-          DataCell(
-            Text('${record.records[index].frame[3]}'),
-          ),
-          DataCell(
-            Row(
-              children: [
-                record.records[index].info.contains('发生缺页')
-                  ? const Icon(Icons.disabled_by_default_rounded)
-                  : const Icon(Icons.star),
-                Text(record.records[index].info),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        border: TableBorder.all(),
-        headingTextStyle: const TextStyle(
+    return DataTableTheme(
+      data: const DataTableThemeData(
+        headingTextStyle: TextStyle(
           fontWeight: FontWeight.bold,
           // fontStyle: FontStyle.italic,
         ),
+      ),
+      child: PaginatedDataTable(
+        header: const Text("执行结果"),
         columns: headers,
-        rows: tableContents,
-      )
+        source: RecordSourceData(
+          sourceData: records
+        ),
+      ),
     );
   }
+}
+
+class RecordSourceData extends DataTableSource {
+  RecordSourceData({required this.sourceData});
+
+  final List<MemState> sourceData;
+
+  @override
+  bool get isRowCountApproximate => false;
+
+  @override
+  int get rowCount => sourceData.length;
+
+  @override
+  int get selectedRowCount => 0;
+
+  @override
+  DataRow getRow(int index) => DataRow(
+    color: WidgetStateProperty.resolveWith(
+    (Set<WidgetState> states) {
+        if (index.isEven) {
+              return Colors.grey.withOpacity(0.2);
+            }
+        return null;
+      }
+    ),
+    cells: [
+      DataCell(
+        Row(
+          children: [
+            const Icon(Icons.access_alarm),
+            Text('No.${sourceData[index].sequential}'),
+          ],
+        ),
+      ),
+      DataCell(
+        Row(
+          children: [
+            const Icon(Icons.fork_right),
+            Text('Ins.${sourceData[index].instrument}'),
+          ],
+        ),
+      ),
+      DataCell(
+        Text('${sourceData[index].frame[0]}'),
+      ),
+      DataCell(
+        Text('${sourceData[index].frame[1]}'),
+      ),
+      DataCell(
+        Text('${sourceData[index].frame[2]}'),
+      ),
+      DataCell(
+        Text('${sourceData[index].frame[3]}'),
+      ),
+      DataCell(
+        Row(
+          children: [
+            sourceData[index].info.contains('发生缺页')
+            ? const Icon(Icons.disabled_by_default_rounded)
+            : const Icon(Icons.star),
+            Text(sourceData[index].info),
+          ],
+        ),
+      ),
+    ],
+  );
 }

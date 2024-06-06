@@ -4,7 +4,7 @@ use super::pages;
 use super::scheduler::Fault;
 
 pub struct MemoryManager {
-    capacity: usize,
+    // capacity: usize,
     scheduler: Box<dyn scheduler::Scheduler>,
     blocks: Vec<Option<pages::Page>>,
     page_table: Vec<pages::Page>,
@@ -20,7 +20,7 @@ impl MemoryManager {
         F: Fn(usize) -> T
     {
         MemoryManager {
-            capacity,
+            // capacity,
             scheduler: Box::new(sc(capacity)),
             blocks: blocks.to_owned(),
             page_table,
