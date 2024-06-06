@@ -30,10 +30,11 @@ class RecordDisplay extends StatelessWidget {
         ),
       ),
       child: PaginatedDataTable(
+        rowsPerPage: 20,
         header: const Text("执行结果"),
         columns: headers,
         source: RecordSourceData(
-          sourceData: records
+          sourceData: records,
         ),
       ),
     );
@@ -68,7 +69,10 @@ class RecordSourceData extends DataTableSource {
       DataCell(
         Row(
           children: [
-            const Icon(Icons.access_alarm),
+            const Icon(
+              Icons.access_alarm,
+              color: Colors.lightGreenAccent,
+            ),
             Text('No.${sourceData[index].sequential}'),
           ],
         ),
@@ -76,7 +80,10 @@ class RecordSourceData extends DataTableSource {
       DataCell(
         Row(
           children: [
-            const Icon(Icons.fork_right),
+            const Icon(
+              Icons.fork_right,
+              color: Colors.cyan,
+            ),
             Text('Ins.${sourceData[index].instrument}'),
           ],
         ),
@@ -97,8 +104,14 @@ class RecordSourceData extends DataTableSource {
         Row(
           children: [
             sourceData[index].info.contains('发生缺页')
-            ? const Icon(Icons.disabled_by_default_rounded)
-            : const Icon(Icons.star),
+            ? const Icon(
+              Icons.disabled_by_default_rounded,
+              color: Colors.red,
+            )
+            : const Icon(
+              Icons.star,
+              color: Colors.green,
+            ),
             Text(sourceData[index].info),
           ],
         ),
