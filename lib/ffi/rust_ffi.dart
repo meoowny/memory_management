@@ -41,7 +41,7 @@ class ExecRecord {
 
 enum GenChoice {
   Random,
-  Sequential,
+  Specific,
 }
 
 class MemState {

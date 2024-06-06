@@ -1,6 +1,5 @@
 import 'dart:ffi';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:os_lab2/ffi/rust_ffi.dart';
 

@@ -89,7 +89,7 @@ impl Wire2Api<GenChoice> for i32 {
     fn wire2api(self) -> GenChoice {
         match self {
             0 => GenChoice::Random,
-            1 => GenChoice::Sequential,
+            1 => GenChoice::Specific,
             _ => unreachable!("Invalid variant for GenChoice: {}", self),
         }
     }

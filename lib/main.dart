@@ -99,13 +99,22 @@ class _MyHomePageState extends State<MyHomePage> {
                   ],
                 ),
               ),
+              Container(
+                margin: const EdgeInsets.all(5),
+                child: const Center(child: Text(
+                  "共有 4 个内存块可使用，320 条指令待执行，每个页面存放 10 条指令，暂不支持修改",
+                  style: TextStyle(
+                    fontSize: 18,
+                  )
+                ),),
+              ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Expanded(
                     flex: 1,
                     child: Center(
-                      child: _StatisticsInfoCard(content: "总指令条数：${_record.totalInstrument}"),
+                      child: _StatisticsInfoCard(content: "总指令条：${_record.totalInstrument}"),
                     ),
                   ),
                   Expanded(
@@ -225,7 +234,7 @@ class GeneratorRadio extends StatelessWidget {
         ListTile(
           title: const Text("Specific"),
           leading: Radio<GenChoice>(
-          value: GenChoice.Sequential,
+          value: GenChoice.Specific,
           groupValue: choice,
           onChanged: onChanged,
         ),
