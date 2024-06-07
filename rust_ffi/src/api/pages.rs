@@ -1,5 +1,5 @@
-use rand::Rng;
 use rand::distributions::{Distribution, Uniform};
+use rand::Rng;
 
 // 完全依概率生成
 pub fn gen_random_order(total_instrument: usize) -> Vec<usize> {
@@ -16,7 +16,7 @@ pub fn gen_random_order(total_instrument: usize) -> Vec<usize> {
                 _ => rng.gen_range(0..total_instrument),
             },
             _ => match results.last() {
-                Some(x) if x + 1 < total_instrument => rng.gen_range((x+1)..total_instrument),
+                Some(x) if x + 1 < total_instrument => rng.gen_range((x + 1)..total_instrument),
                 _ => rng.gen_range(0..total_instrument),
             },
         });
@@ -36,9 +36,9 @@ pub fn gen_specific_order(total_instrument: usize) -> Vec<usize> {
             0 => match results.last() {
                 Some(x) if x > &0 => rng.gen_range(0..*x),
                 _ => rng.gen_range(0..total_instrument),
-            } ,
+            },
             2 => match results.last() {
-                Some(x) if x + 1 < total_instrument => rng.gen_range((x+1)..total_instrument),
+                Some(x) if x + 1 < total_instrument => rng.gen_range((x + 1)..total_instrument),
                 _ => rng.gen_range(0..total_instrument),
             },
             _ => panic!("Unexpected branch!"),
@@ -49,8 +49,8 @@ pub fn gen_specific_order(total_instrument: usize) -> Vec<usize> {
 }
 
 pub struct Page {
-    pub page_id: usize,           // 页号
-    pub block_id: Option<usize>,  // 内存块号（含中断位信息，由 Option 体现）
+    pub page_id: usize,          // 页号
+    pub block_id: Option<usize>, // 内存块号（含中断位信息，由 Option 体现）
 }
 
 impl Page {
@@ -79,4 +79,4 @@ impl Clone for Page {
     }
 }
 
-impl Copy for Page { }
+impl Copy for Page {}

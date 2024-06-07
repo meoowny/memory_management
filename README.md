@@ -21,8 +21,8 @@
         6. 顺序执行下一条指令，即序号为 m2+1 的指令；
         7. 重复步骤 3~5 直到执行完 320 条指令。
 - 置换算法：
-    - FIFO
-    - LRU
+    - FIFO：实现较为简单，但性能较差，容易产生抖动现象；
+    - LRU：是局部性原理的合理近似，性能接近最佳算法，但需要另外记录页面使用时间的先后关系（本次项目中使用双向队列存储）。
 
 ## 开发环境
 
@@ -45,5 +45,69 @@
 
 提交至学院服务器的项目中包含打包好的 Windows 可执行文件与 Android 安装包，可自选运行方式。
 
-## 算法实现
+## 项目架构与算法实现
+
+前端部分略，主要用于执行结果的数据呈现。通过 `generateReplacementRecord` 函数（见 `lib/ffi/native_ffi.dart` 的 `NativeFun` 类）与 Rust 代码进行交互，完成算法选择与结果接收。
+
+### 内存管理器 MemoryManager
+
+负责作业执行过程中的地址转换与页面置换工作，主要结构体主要包含了置换算法实现 trait、提供的内存块数量、页表、页存储的指令条数、缺页数、已执行指令条数：
+
+```rust
+pub struct MemoryManager {
+    scheduler: Box<dyn scheduler::Scheduler>,
+    blocks: Vec<Option<pages::Page>>,
+    page_table: Vec<pages::Page>,
+    page_size: usize,
+    fault_counter: usize,
+    instrument_counter: usize,
+}
+```
+
+通过 `step` 函数模拟单条指令的执行，接收当前指令地址，返回指令执行情况（当前内存块内容、是否缺页）。
+
+### 置换算法实现 Scheduler
+
+提供一个 `Scheduler` trait 定义了置换算法需要实现的函数：`check` 函数和 `reset` 函数，`check` 函数检查是否缺页，缺页的话返回需要调出页的所在内存块的块号：
+
+```rust
+pub trait Scheduler {
+    fn check(
+        &mut self,
+        new_page_id: usize,
+        blocks: &Vec<Option<pages::Page>>,
+        page_table: &Vec<pages::Page>,
+    ) -> Result<usize, Fault>;
+    fn reset(&mut self);
+}
+```
+
+#### FIFO 置换算法
+
+先进先出置换算法，在每次选择需要调出的页面时选择最早调入内存的页面。
+
+结构体使用一个变量 `oldest_block_id` 存储当前内存块中最早调入内存的页面的页号。若发生缺页则调出最早调入的页，并更新 `oldest_block_id`。
+
+```rust
+pub struct FIFOScheduler {
+    capacity: usize,
+    oldest_block_id: usize,
+}
+```
+
+#### LRU 置换算法
+
+最近最久未使用算法，在每次选择调出的页面时选择最近最久未使用的页面。
+
+结构体使用一个双向队列 `current_pages` 存储最近使用的页面。实现逻辑如下：
+- 若当前指令在内存中，则将队列中的⻚号删去重新压入队列头部；
+- 若当前指令不在内存中（发生缺页），但内存尚有空闲，直接将指令所在页的页号压入队列头部；
+- 若当前指令不在内存中（发生缺页）且内存无空闲块，则弹出队列尾部页号并压入当前指令所在页的页号，弹出页所在块的块号返回给 `MemoryManager` 用以调出内存。
+
+```rust
+pub struct LRUScheduler {
+    capacity: usize,
+    current_pages: VecDeque<usize>,
+}
+```
 
