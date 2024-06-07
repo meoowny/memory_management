@@ -111,3 +111,10 @@ pub struct LRUScheduler {
 }
 ```
 
+## 运行截图
+
+![](assets/screenshot1.png)
+![](assets/screenshot2.png)
+![](assets/screenshot3.png)
+![](assets/screenshot4.png)
+
